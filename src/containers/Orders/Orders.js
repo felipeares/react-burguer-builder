@@ -5,42 +5,23 @@ import Spinner from "../../components/UI/Spinner/Spinner";
 
 import WithErrorHandler from "../../hoc/withErrorHandler/withErrorHandler";
 
+import { connect } from "react-redux";
 import axios from "../../axios-orders";
 
-class Orders extends Component {
-  state = {
-    orders: [],
-    loading: true,
-    error: false
-  };
+import * as actions from "../../store/actions/index";
 
+class Orders extends Component {
   componentDidMount() {
-    axios
-      .get("orders.json")
-      .then(response => {
-        const orders = Object.keys(response.data).map(key => {
-          return { ...response.data[key], key: key };
-        });
-        this.setState({
-          orders: orders,
-          loading: false
-        });
-      })
-      .catch(error => {
-        this.setState({
-          loading: false,
-          error: true
-        });
-      });
+    this.props.onFetchOrders(this.props.token, this.props.userId);
   }
 
   render() {
     let orders;
 
-    if (this.state.loading) {
+    if (this.props.loading) {
       orders = <Spinner />;
     } else {
-      orders = this.state.orders.map(order => {
+      orders = this.props.orders.map(order => {
         return (
           <Order
             key={order.key}
@@ -51,7 +32,7 @@ class Orders extends Component {
       });
     }
 
-    if (this.state.error) {
+    if (this.props.error) {
       orders = <p>ups! problems loading your orders</p>;
     }
 
@@ -59,4 +40,24 @@ class Orders extends Component {
   }
 }
 
-export default WithErrorHandler(Orders, axios);
+const mapStateToProps = state => {
+  return {
+    orders: state.order.orders,
+    loading: state.order.loadingOrders,
+    error: state.order.ordersError,
+    token: state.auth.token,
+    userId: state.auth.userId
+  };
+};
+
+const mapDispatchToProps = dispatch => {
+  return {
+    onFetchOrders: (token, userId) =>
+      dispatch(actions.fetchOrders(token, userId))
+  };
+};
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(WithErrorHandler(Orders, axios));
